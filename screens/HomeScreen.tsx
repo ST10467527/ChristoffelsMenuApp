@@ -1,50 +1,53 @@
 
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState } from 'react';
 import {
-  Alert,
+  SafeAreaView,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
   TextInput,
-  TouchableOpacity,
+  Pressable,
   View,
-} from "react-native";
+} from 'react-native';
 
-import colors from "../constants/colors";
-import typography from "../constants/typography";
-import type { Dish } from "./AddDishScreen";
+import type { Dish } from './AddDishScreen';
 
 type HomeScreenProps = {
   dishes: Dish[];
   onAddDish: () => void;
   onEditDish: (dish: Dish) => void;
-  onRemoveDish: (dish: Dish) => void;
-  onToggleAvailability: (dish: Dish) => void;
 };
 
-const courses = ["All", "Starter", "Main Course", "Dessert", "Beverage"];
-const availabilityOptions = ["All", "Available", "Unavailable"];
+const COLORS = {
+  cream: '#FAF6ED',
+  burgundy: '#5A1718',
+  burgundyLight: '#7A3030',
+  gold: '#D4B16A',
+  white: '#FFFFFF',
+  text: '#292321',
+  muted: '#857C74',
+  border: '#E9E0D4',
+  green: '#356B48',
+  red: '#A44444',
+  softGreen: '#E8F1E8',
+  softRed: '#F8EAEA',
+};
 
-function formatPrice(price: number) {
-  return `R ${price.toFixed(2)}`;
-}
+const COURSES = ['All', 'Starter', 'Main Course', 'Dessert', 'Beverage'];
 
 export default function HomeScreen({
   dishes,
   onAddDish,
   onEditDish,
-  onRemoveDish,
-  onToggleAvailability,
 }: HomeScreenProps) {
-  const [search, setSearch] = useState("");
-  const [selectedCourse, setSelectedCourse] = useState("All");
-  const [selectedAvailability, setSelectedAvailability] = useState("All");
+  const [search, setSearch] = useState('');
+  const [selectedCourse, setSelectedCourse] = useState('All');
+  const [availabilityFilter, setAvailabilityFilter] = useState('All');
 
-  const availableCount = dishes.filter(
-    (dish) => dish.available !== false
-  ).length;
-
-  const unavailableCount = dishes.length - availableCount;
+  const totalDishes = dishes.length;
+  const availableDishes = dishes.filter((dish) => dish.available).length;
+  const unavailableDishes = totalDishes - availableDishes;
 
   const filteredDishes = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -57,711 +60,579 @@ export default function HomeScreen({
         dish.course.toLowerCase().includes(query);
 
       const matchesCourse =
-        selectedCourse === "All" || dish.course === selectedCourse;
-
-      const isAvailable = dish.available !== false;
+        selectedCourse === 'All' || dish.course === selectedCourse;
 
       const matchesAvailability =
-        selectedAvailability === "All" ||
-        (selectedAvailability === "Available" && isAvailable) ||
-        (selectedAvailability === "Unavailable" && !isAvailable);
+        availabilityFilter === 'All' ||
+        (availabilityFilter === 'Available' && dish.available) ||
+        (availabilityFilter === 'Unavailable' && !dish.available);
 
       return matchesSearch && matchesCourse && matchesAvailability;
     });
-  }, [dishes, search, selectedCourse, selectedAvailability]);
+  }, [dishes, search, selectedCourse, availabilityFilter]);
 
-  function resetFilters() {
-    setSearch("");
-    setSelectedCourse("All");
-    setSelectedAvailability("All");
-  }
+  const formatPrice = (price: number) =>
+    `R ${price.toLocaleString('en-ZA', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
 
-  function confirmRemove(dish: Dish) {
-    Alert.alert(
-      "Remove Dish",
-      `Are you sure you want to remove "${dish.name}" from the menu?`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Remove",
-          style: "destructive",
-          onPress: () => onRemoveDish(dish),
-        },
-      ]
-    );
-  }
-
-  function confirmAvailabilityChange(dish: Dish) {
-    const isAvailable = dish.available !== false;
-    const nextStatus = isAvailable ? "unavailable" : "available";
-
-    Alert.alert(
-      isAvailable ? "Mark as Unavailable?" : "Make Dish Available?",
-      `${dish.name} will be marked as ${nextStatus}.`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Confirm",
-          onPress: () => onToggleAvailability(dish),
-        },
-      ]
-    );
-  }
+  const clearFilters = () => {
+    setSearch('');
+    setSelectedCourse('All');
+    setAvailabilityFilter('All');
+  };
 
   return (
-    <View style={styles.screen}>
+    <SafeAreaView style={styles.safeArea}>
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor={COLORS.burgundy}
+      />
+
       <ScrollView
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
+        style={styles.container}
+        contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
+        {/* Restaurant header */}
         <View style={styles.header}>
           <View>
-            <Text style={styles.eyebrow}>CHRISTOFFEL'S</Text>
-            <Text style={[typography.screenTitle, styles.title]}>
-              Menu Manager
-            </Text>
-            <Text style={styles.subtitle}>
-              Manage your dishes, prices and availability.
-            </Text>
+            <Text style={styles.brandName}>CHRISTOFFEL’S</Text>
+            <Text style={styles.brandSubtitle}>RESTAURANT MENU</Text>
           </View>
 
-          <View style={styles.headerMark}>
-            <Text style={styles.headerMarkText}>C</Text>
+          <View style={styles.brandMark}>
+            <Text style={styles.brandMarkText}>C</Text>
           </View>
         </View>
 
-        <View style={styles.statsRow}>
+        {/* Page heading */}
+        <View style={styles.headingSection}>
+          <Text style={styles.screenTitle}>Menu Dashboard</Text>
+          <Text style={styles.screenSubtitle}>
+            Manage your restaurant menu in one place.
+          </Text>
+        </View>
+
+        {/* Add dish button */}
+        <Pressable
+          style={styles.addButton}
+          onPress={onAddDish}
+        >
+          <Text style={styles.addButtonText}>+ Add New Dish</Text>
+        </Pressable>
+
+        {/* Menu overview */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Menu Overview</Text>
+        </View>
+
+        <View style={styles.statsContainer}>
           <View style={styles.statCard}>
-            <Text style={styles.statNumber}>{dishes.length}</Text>
+            <Text style={styles.statNumber}>{totalDishes}</Text>
             <Text style={styles.statLabel}>Total Dishes</Text>
           </View>
 
           <View style={styles.statCard}>
-            <Text style={[styles.statNumber, styles.availableNumber]}>
-              {availableCount}
+            <Text style={[styles.statNumber, { color: COLORS.green }]}>
+              {availableDishes}
             </Text>
             <Text style={styles.statLabel}>Available</Text>
           </View>
 
           <View style={styles.statCard}>
-            <Text style={[styles.statNumber, styles.unavailableNumber]}>
-              {unavailableCount}
+            <Text style={[styles.statNumber, { color: COLORS.red }]}>
+              {unavailableDishes}
             </Text>
             <Text style={styles.statLabel}>Unavailable</Text>
           </View>
         </View>
 
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={onAddDish}
-          activeOpacity={0.85}
+        {/* Your dishes */}
+        <View style={styles.dishesHeading}>
+          <Text style={styles.sectionTitle}>Your Dishes</Text>
+          <Text style={styles.dishCount}>{totalDishes} dishes</Text>
+        </View>
+
+        {/* Search */}
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search dishes..."
+          placeholderTextColor={COLORS.muted}
+          value={search}
+          onChangeText={setSearch}
+        />
+
+        {/* Course filters */}
+        <Text style={styles.filterLabel}>FILTER BY COURSE</Text>
+
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filterContainer}
         >
-          <Text style={styles.addButtonPlus}>＋</Text>
-          <Text style={styles.addButtonText}>Add New Dish</Text>
-        </TouchableOpacity>
+          {COURSES.map((course) => (
+            <Pressable
+              key={course}
+              style={[
+                styles.filterButton,
+                selectedCourse === course && styles.activeFilterButton,
+              ]}
+              onPress={() => setSelectedCourse(course)}
+            >
+              <Text
+                style={[
+                  styles.filterButtonText,
+                  selectedCourse === course &&
+                    styles.activeFilterButtonText,
+                ]}
+              >
+                {course}
+              </Text>
+            </Pressable>
+          ))}
+        </ScrollView>
 
-        <View style={styles.searchContainer}>
-          <Text style={styles.searchIcon}>⌕</Text>
-          <TextInput
-            style={styles.searchInput}
-            value={search}
-            onChangeText={setSearch}
-            placeholder="Search dishes, descriptions or courses..."
-            placeholderTextColor={colors.muted}
-            returnKeyType="search"
-          />
-          {search.length > 0 && (
-            <TouchableOpacity onPress={() => setSearch("")}>
-              <Text style={styles.clearSearch}>×</Text>
-            </TouchableOpacity>
-          )}
+        {/* Availability filters */}
+        <Text style={styles.filterLabel}>AVAILABILITY</Text>
+
+        <View style={styles.availabilityFilters}>
+          {['All', 'Available', 'Unavailable'].map((filter) => (
+            <Pressable
+              key={filter}
+              style={[
+                styles.availabilityButton,
+                availabilityFilter === filter &&
+                  styles.activeAvailabilityButton,
+              ]}
+              onPress={() => setAvailabilityFilter(filter)}
+            >
+              <Text
+                style={[
+                  styles.availabilityButtonText,
+                  availabilityFilter === filter &&
+                    styles.activeAvailabilityButtonText,
+                ]}
+              >
+                {filter}
+              </Text>
+            </Pressable>
+          ))}
         </View>
 
-        <View style={styles.filterSection}>
-          <Text style={styles.filterHeading}>COURSE</Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.filterRow}
-          >
-            {courses.map((item) => {
-              const selected = selectedCourse === item;
-
-              return (
-                <TouchableOpacity
-                  key={item}
-                  onPress={() => setSelectedCourse(item)}
-                  style={[
-                    styles.filterChip,
-                    selected && styles.selectedFilterChip,
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.filterText,
-                      selected && styles.selectedFilterText,
-                    ]}
-                  >
-                    {item}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-        </View>
-
-        <View style={styles.filterSection}>
-          <Text style={styles.filterHeading}>AVAILABILITY</Text>
-          <View style={styles.availabilityFilters}>
-            {availabilityOptions.map((item) => {
-              const selected = selectedAvailability === item;
-
-              return (
-                <TouchableOpacity
-                  key={item}
-                  onPress={() => setSelectedAvailability(item)}
-                  style={[
-                    styles.availabilityChip,
-                    selected && styles.selectedAvailabilityChip,
-                    selected && item === "Available" && styles.availableSelected,
-                    selected &&
-                      item === "Unavailable" &&
-                      styles.unavailableSelected,
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.availabilityFilterText,
-                      selected && styles.selectedAvailabilityFilterText,
-                    ]}
-                  >
-                    {item}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </View>
-
-        <View style={styles.menuHeadingRow}>
-          <View>
-            <Text style={styles.sectionTitle}>Your Menu</Text>
-            <Text style={styles.resultCount}>
-              {filteredDishes.length}{" "}
-              {filteredDishes.length === 1 ? "dish" : "dishes"} found
+        {/* Dish list */}
+        {dishes.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyTitle}>Your menu is waiting</Text>
+            <Text style={styles.emptyDescription}>
+              Start building your restaurant menu by adding your first dish.
             </Text>
+
+            <Pressable
+              style={styles.emptyButton}
+              onPress={onAddDish}
+            >
+              <Text style={styles.emptyButtonText}>Add Your First Dish</Text>
+            </Pressable>
           </View>
-
-          {(search ||
-            selectedCourse !== "All" ||
-            selectedAvailability !== "All") && (
-            <TouchableOpacity onPress={resetFilters}>
-              <Text style={styles.resetText}>Reset filters</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {filteredDishes.length === 0 ? (
+        ) : filteredDishes.length === 0 ? (
           <View style={styles.emptyState}>
             <Text style={styles.emptyTitle}>No dishes found</Text>
             <Text style={styles.emptyDescription}>
-              Try another search or change your filters.
+              Try changing your search or filters.
             </Text>
-            <TouchableOpacity onPress={resetFilters}>
-              <Text style={styles.resetText}>Clear all filters</Text>
-            </TouchableOpacity>
+
+            <Pressable
+              style={styles.clearButton}
+              onPress={clearFilters}
+            >
+              <Text style={styles.clearButtonText}>Clear Filters</Text>
+            </Pressable>
           </View>
         ) : (
-          filteredDishes.map((dish) => {
-            const isAvailable = dish.available !== false;
-
-            return (
+          <View style={styles.dishList}>
+            {filteredDishes.map((dish) => (
               <View key={dish.id} style={styles.dishCard}>
-                <View style={styles.dishTopRow}>
-                  <View style={styles.dishTitleContainer}>
-                    <Text style={styles.dishName}>{dish.name}</Text>
-                    <Text style={styles.dishCourse}>{dish.course}</Text>
-                  </View>
+                <View style={styles.dishInformation}>
+                  <Text style={styles.dishName}>{dish.name}</Text>
+
+                  <Text style={styles.dishDescription}>
+                    {dish.description}
+                  </Text>
+
+                  <Text style={styles.dishCourse}>{dish.course}</Text>
 
                   <Text style={styles.dishPrice}>
                     {formatPrice(dish.price)}
                   </Text>
-                </View>
 
-                <Text style={styles.dishDescription}>
-                  {dish.description}
-                </Text>
-
-                <View style={styles.dishStatusRow}>
                   <View
                     style={[
                       styles.statusBadge,
-                      isAvailable
+                      dish.available
                         ? styles.availableBadge
                         : styles.unavailableBadge,
                     ]}
                   >
-                    <View
-                      style={[
-                        styles.statusDot,
-                        isAvailable
-                          ? styles.availableDot
-                          : styles.unavailableDot,
-                      ]}
-                    />
                     <Text
                       style={[
                         styles.statusText,
-                        isAvailable
+                        dish.available
                           ? styles.availableText
                           : styles.unavailableText,
                       ]}
                     >
-                      {isAvailable ? "Available" : "Unavailable"}
+                      {dish.available ? 'Available' : 'Unavailable'}
                     </Text>
                   </View>
-
-                  <TouchableOpacity
-                    onPress={() => confirmAvailabilityChange(dish)}
-                    style={[
-                      styles.toggleButton,
-                      isAvailable
-                        ? styles.markUnavailableButton
-                        : styles.markAvailableButton,
-                    ]}
-                    activeOpacity={0.8}
-                  >
-                    <Text
-                      style={[
-                        styles.toggleButtonText,
-                        !isAvailable && styles.markAvailableText,
-                      ]}
-                    >
-                      {isAvailable
-                        ? "Mark Unavailable"
-                        : "Make Available"}
-                    </Text>
-                  </TouchableOpacity>
                 </View>
 
-                <View style={styles.cardDivider} />
-
-                <View style={styles.actionsRow}>
-                  <TouchableOpacity
-                    style={styles.editButton}
-                    onPress={() => onEditDish(dish)}
-                    activeOpacity={0.8}
-                  >
-                    <Text style={styles.editButtonText}>Edit Dish</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={styles.removeButton}
-                    onPress={() => confirmRemove(dish)}
-                    activeOpacity={0.8}
-                  >
-                    <Text style={styles.removeButtonText}>Remove</Text>
-                  </TouchableOpacity>
-                </View>
+                <Pressable
+                  style={styles.editButton}
+                  onPress={() => onEditDish(dish)}
+                >
+                  <Text style={styles.editButtonText}>Edit</Text>
+                </Pressable>
               </View>
-            );
-          })
+            ))}
+          </View>
         )}
 
-        <Text style={styles.footer}>
-          CHRISTOFFEL'S MENU MANAGEMENT
-        </Text>
+        {/* Footer */}
+        <View style={styles.footer}>
+          <Text style={styles.footerText}>
+            CHRISTOFFEL’S · EST. 2026
+          </Text>
+        </View>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
+  safeArea: {
     flex: 1,
-    backgroundColor: colors.cream,
+    backgroundColor: COLORS.cream,
   },
-  content: {
-    padding: 20,
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.cream,
+  },
+  scrollContent: {
     paddingBottom: 35,
   },
   header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginTop: 14,
-    marginBottom: 22,
+    backgroundColor: COLORS.burgundy,
+    paddingHorizontal: 24,
+    paddingVertical: 25,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
-  eyebrow: {
-    fontSize: 11,
-    color: colors.gold,
-    fontWeight: "700",
-    letterSpacing: 2.2,
-    marginBottom: 6,
+  brandName: {
+    color: COLORS.white,
+    fontSize: 21,
+    fontWeight: '800',
+    letterSpacing: 2,
   },
-  title: {
-    color: colors.burgundy,
-    marginBottom: 5,
+  brandSubtitle: {
+    color: COLORS.gold,
+    fontSize: 10,
+    letterSpacing: 3,
+    marginTop: 5,
   },
-  subtitle: {
-    fontSize: 13,
-    lineHeight: 19,
-    color: colors.muted,
-    maxWidth: 260,
+  brandMark: {
+    width: 45,
+    height: 45,
+    borderRadius: 23,
+    borderWidth: 1.5,
+    borderColor: COLORS.gold,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  headerMark: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: colors.burgundy,
-    borderWidth: 2,
-    borderColor: colors.gold,
-    alignItems: "center",
-    justifyContent: "center",
+  brandMarkText: {
+    color: COLORS.gold,
+    fontSize: 25,
+    fontWeight: '600',
   },
-  headerMarkText: {
-    fontSize: 24,
-    fontWeight: "700",
-    color: colors.gold,
+  headingSection: {
+    paddingHorizontal: 22,
+    paddingTop: 28,
+    paddingBottom: 18,
   },
-  statsRow: {
-    flexDirection: "row",
-    gap: 9,
-    marginBottom: 16,
+  screenTitle: {
+    color: COLORS.text,
+    fontSize: 27,
+    fontWeight: '700',
   },
-  statCard: {
-    flex: 1,
-    backgroundColor: colors.white,
-    borderRadius: 12,
-    paddingVertical: 15,
-    paddingHorizontal: 8,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  statNumber: {
-    color: colors.burgundy,
-    fontSize: 23,
-    fontWeight: "700",
-    marginBottom: 4,
-  },
-  availableNumber: {
-    color: colors.success,
-  },
-  unavailableNumber: {
-    color: colors.error,
-  },
-  statLabel: {
-    fontSize: 11,
-    color: colors.muted,
+  screenSubtitle: {
+    color: COLORS.muted,
+    fontSize: 14,
+    marginTop: 7,
   },
   addButton: {
-    minHeight: 52,
-    borderRadius: 12,
-    backgroundColor: colors.burgundy,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    marginBottom: 17,
-  },
-  addButtonPlus: {
-    color: colors.gold,
-    fontSize: 22,
-    fontWeight: "500",
+    backgroundColor: COLORS.burgundy,
+    marginHorizontal: 22,
+    paddingVertical: 16,
+    borderRadius: 10,
+    alignItems: 'center',
   },
   addButtonText: {
-    ...typography.button,
-    color: colors.white,
+    color: COLORS.white,
+    fontSize: 15,
+    fontWeight: '700',
   },
-  searchContainer: {
-    minHeight: 50,
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: colors.white,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: 13,
-    marginBottom: 20,
-  },
-  searchIcon: {
-    color: colors.burgundy,
-    fontSize: 25,
-    marginRight: 8,
-  },
-  searchInput: {
-    flex: 1,
-    color: colors.black,
-    fontSize: 13,
-    paddingVertical: 12,
-  },
-  clearSearch: {
-    color: colors.muted,
-    fontSize: 24,
-    paddingLeft: 8,
-  },
-  filterSection: {
-    marginBottom: 18,
-  },
-  filterHeading: {
-    color: colors.muted,
-    fontSize: 11,
-    fontWeight: "700",
-    letterSpacing: 1.4,
-    marginBottom: 10,
-  },
-  filterRow: {
-    gap: 8,
-    paddingRight: 5,
-  },
-  filterChip: {
-    paddingVertical: 9,
-    paddingHorizontal: 14,
-    borderRadius: 22,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.white,
-  },
-  selectedFilterChip: {
-    backgroundColor: colors.burgundy,
-    borderColor: colors.burgundy,
-  },
-  filterText: {
-    color: colors.black,
-    fontSize: 12,
-    fontWeight: "500",
-  },
-  selectedFilterText: {
-    color: colors.white,
-  },
-  availabilityFilters: {
-    flexDirection: "row",
-    gap: 8,
-  },
-  availabilityChip: {
-    flex: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 5,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.white,
-    alignItems: "center",
-  },
-  selectedAvailabilityChip: {
-    backgroundColor: colors.burgundy,
-    borderColor: colors.burgundy,
-  },
-  availableSelected: {
-    backgroundColor: "#287D46",
-    borderColor: "#287D46",
-  },
-  unavailableSelected: {
-    backgroundColor: colors.error,
-    borderColor: colors.error,
-  },
-  availabilityFilterText: {
-    color: colors.black,
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  selectedAvailabilityFilterText: {
-    color: colors.white,
-  },
-  menuHeadingRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginTop: 5,
+  sectionHeader: {
+    marginHorizontal: 22,
+    marginTop: 30,
     marginBottom: 14,
   },
   sectionTitle: {
-    ...typography.sectionTitle,
-    color: colors.burgundy,
+    color: COLORS.text,
+    fontSize: 19,
+    fontWeight: '700',
   },
-  resultCount: {
-    color: colors.muted,
-    fontSize: 12,
-    marginTop: 3,
-  },
-  resetText: {
-    color: colors.burgundy,
-    fontSize: 12,
-    fontWeight: "700",
-  },
-  dishCard: {
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 15,
-    padding: 16,
-    marginBottom: 13,
-  },
-  dishTopRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    gap: 12,
-  },
-  dishTitleContainer: {
-    flex: 1,
-  },
-  dishName: {
-    color: colors.burgundy,
-    fontSize: 17,
-    fontWeight: "700",
-    lineHeight: 23,
-  },
-  dishCourse: {
-    color: colors.gold,
-    fontSize: 11,
-    fontWeight: "700",
-    marginTop: 5,
-    textTransform: "uppercase",
-    letterSpacing: 0.8,
-  },
-  dishPrice: {
-    ...typography.price,
-    color: colors.burgundy,
-  },
-  dishDescription: {
-    color: colors.muted,
-    fontSize: 13,
-    lineHeight: 20,
-    marginTop: 12,
-    marginBottom: 15,
-  },
-  dishStatusRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    flexWrap: "wrap",
-    gap: 9,
-  },
-  statusBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderRadius: 20,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-    gap: 6,
-  },
-  availableBadge: {
-    backgroundColor: "#E8F4E9",
-  },
-  unavailableBadge: {
-    backgroundColor: "#FCE9E7",
-  },
-  statusDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-  },
-  availableDot: {
-    backgroundColor: colors.success,
-  },
-  unavailableDot: {
-    backgroundColor: colors.error,
-  },
-  statusText: {
-    fontSize: 11,
-    fontWeight: "700",
-  },
-  availableText: {
-    color: colors.success,
-  },
-  unavailableText: {
-    color: colors.error,
-  },
-  toggleButton: {
-    borderRadius: 8,
-    paddingVertical: 9,
-    paddingHorizontal: 11,
-    borderWidth: 1,
-  },
-  markUnavailableButton: {
-    borderColor: colors.border,
-    backgroundColor: colors.cream,
-  },
-  markAvailableButton: {
-    borderColor: "#B8DCC0",
-    backgroundColor: "#E8F4E9",
-  },
-  toggleButtonText: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: colors.burgundy,
-  },
-  markAvailableText: {
-    color: colors.success,
-  },
-  cardDivider: {
-    height: 1,
-    backgroundColor: colors.border,
-    marginTop: 15,
-    marginBottom: 13,
-  },
-  actionsRow: {
-    flexDirection: "row",
+  statsContainer: {
+    flexDirection: 'row',
+    marginHorizontal: 22,
     gap: 10,
   },
-  editButton: {
+  statCard: {
     flex: 1,
-    minHeight: 40,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 9,
-    backgroundColor: colors.burgundy,
-  },
-  editButtonText: {
-    color: colors.white,
-    fontSize: 12,
-    fontWeight: "700",
-  },
-  removeButton: {
-    minHeight: 40,
-    minWidth: 85,
-    paddingHorizontal: 13,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 9,
+    backgroundColor: COLORS.white,
+    borderRadius: 10,
+    paddingVertical: 18,
+    alignItems: 'center',
     borderWidth: 1,
-    borderColor: "#E7B7B3",
-    backgroundColor: colors.white,
+    borderColor: COLORS.border,
   },
-  removeButtonText: {
-    color: colors.error,
-    fontSize: 12,
-    fontWeight: "700",
+  statNumber: {
+    fontSize: 23,
+    fontWeight: '800',
+    color: COLORS.burgundy,
   },
-  emptyState: {
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 15,
-    padding: 25,
-    alignItems: "center",
+  statLabel: {
+    fontSize: 11,
+    color: COLORS.muted,
+    marginTop: 6,
+    textAlign: 'center',
   },
-  emptyTitle: {
-    color: colors.burgundy,
-    fontSize: 17,
-    fontWeight: "700",
-    marginBottom: 8,
-  },
-  emptyDescription: {
-    color: colors.muted,
-    fontSize: 13,
-    textAlign: "center",
-    lineHeight: 20,
+  dishesHeading: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginHorizontal: 22,
+    marginTop: 32,
     marginBottom: 15,
   },
-  footer: {
-    textAlign: "center",
-    color: colors.muted,
+  dishCount: {
+    color: COLORS.muted,
+    fontSize: 12,
+  },
+  searchInput: {
+    backgroundColor: COLORS.white,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 9,
+    paddingHorizontal: 15,
+    paddingVertical: 13,
+    marginHorizontal: 22,
+    fontSize: 14,
+    color: COLORS.text,
+  },
+  filterLabel: {
+    marginHorizontal: 22,
+    marginTop: 20,
+    marginBottom: 10,
+    color: COLORS.muted,
     fontSize: 10,
-    fontWeight: "600",
+    fontWeight: '700',
     letterSpacing: 1.5,
-    marginTop: 16,
+  },
+  filterContainer: {
+    paddingHorizontal: 22,
+    gap: 8,
+  },
+  filterButton: {
+    paddingHorizontal: 15,
+    paddingVertical: 9,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.white,
+  },
+  activeFilterButton: {
+    backgroundColor: COLORS.burgundy,
+    borderColor: COLORS.burgundy,
+  },
+  filterButtonText: {
+    color: COLORS.text,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  activeFilterButtonText: {
+    color: COLORS.white,
+  },
+  availabilityFilters: {
+    flexDirection: 'row',
+    marginHorizontal: 22,
+    gap: 8,
+  },
+  availabilityButton: {
+    paddingHorizontal: 13,
+    paddingVertical: 9,
+    borderRadius: 20,
+    backgroundColor: COLORS.white,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  activeAvailabilityButton: {
+    backgroundColor: COLORS.burgundy,
+    borderColor: COLORS.burgundy,
+  },
+  availabilityButtonText: {
+    color: COLORS.text,
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  activeAvailabilityButtonText: {
+    color: COLORS.white,
+  },
+  dishList: {
+    marginHorizontal: 22,
+    marginTop: 18,
+    gap: 12,
+  },
+  dishCard: {
+    backgroundColor: COLORS.white,
+    borderRadius: 11,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    padding: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  dishInformation: {
+    flex: 1,
+    paddingRight: 12,
+  },
+  dishName: {
+    color: COLORS.text,
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  dishDescription: {
+    color: COLORS.muted,
+    fontSize: 12,
+    lineHeight: 18,
+    marginTop: 5,
+  },
+  dishCourse: {
+    color: COLORS.burgundyLight,
+    fontSize: 11,
+    fontWeight: '600',
+    marginTop: 8,
+  },
+  dishPrice: {
+    color: COLORS.burgundy,
+    fontSize: 16,
+    fontWeight: '800',
+    marginTop: 7,
+  },
+  statusBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    borderRadius: 20,
+    marginTop: 8,
+  },
+  availableBadge: {
+    backgroundColor: COLORS.softGreen,
+  },
+  unavailableBadge: {
+    backgroundColor: COLORS.softRed,
+  },
+  statusText: {
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  availableText: {
+    color: COLORS.green,
+  },
+  unavailableText: {
+    color: COLORS.red,
+  },
+  editButton: {
+    backgroundColor: COLORS.cream,
+    borderWidth: 1,
+    borderColor: COLORS.gold,
+    paddingHorizontal: 17,
+    paddingVertical: 9,
+    borderRadius: 8,
+  },
+  editButtonText: {
+    color: COLORS.burgundy,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  emptyState: {
+    marginHorizontal: 22,
+    marginTop: 25,
+    padding: 25,
+    borderRadius: 12,
+    backgroundColor: COLORS.white,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    alignItems: 'center',
+  },
+  emptyTitle: {
+    color: COLORS.text,
+    fontSize: 17,
+    fontWeight: '700',
+  },
+  emptyDescription: {
+    color: COLORS.muted,
+    fontSize: 13,
+    lineHeight: 20,
+    textAlign: 'center',
+    marginTop: 8,
+  },
+  emptyButton: {
+    backgroundColor: COLORS.burgundy,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginTop: 18,
+  },
+  emptyButtonText: {
+    color: COLORS.white,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  clearButton: {
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: COLORS.gold,
+    marginTop: 15,
+  },
+  clearButtonText: {
+    color: COLORS.burgundy,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  footer: {
+    alignItems: 'center',
+    marginTop: 35,
+    paddingVertical: 15,
+  },
+  footerText: {
+    color: COLORS.muted,
+    fontSize: 10,
+    letterSpacing: 2,
   },
 });
